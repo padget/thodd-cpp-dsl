@@ -16,58 +16,63 @@ thodd
     } ;
 
 
+    as_dsl_expression(
+        auto&& ... __expr)
+    {
+        return 
+        dsl_expression<std::decay_t<decltype(__expr)>...>
+        { std::make_tuple(static_cast<decltype(__expr)&&>(__expr)...) } ;
+    }
+
+
     template<
         typename node_t>
-    struct dsl_node
+    struct dsl_node 
     {
         node_t node ;
-    } ;
+    } ; 
 
 
-    template<
-        typename ... expressions_t>
-    struct dsl_expressions
-    {
-        std::tuple<expressions_t...> expressions ;
-    } ;
-
-
-    template<
-        size_t index_c,
-        typename ... nodes_t>
     constexpr auto
-    get(
-        dsl_expression<nodes_t...> const& __cdsl)
+    as_dsl_node(
+        auto&& __node)
     {
-        return 
-        std::get<index_c>(
-            __cdsl.nodes) ;
+        return
+        dsl_node<std::decay_t<decltype(__node)>>
+        { static_cast<decltype(__node)&&>(__node) } ;
     }
 
 
-    template<
-        size_t index_c,
-        typename ... expressions_t>
-    constexpr auto
-    get(
-        dsl_expressions<expressions_t...> const& __cdsl)
-    {
-        return 
-        std::get<index_c>(
-            __cdsl.expressions) ;
-    }
+    // template<
+    //     typename ... expressions_t>
+    // struct dsl_expressions
+    // {
+    //     std::tuple<expressions_t...> expressions ;
+    // } ;
+
+
+    // template<
+    //     size_t index_c,
+    //     typename ... expressions_t>
+    // constexpr auto
+    // get (
+    //     dsl_expressions<expressions_t...> const& __cdsl)
+    // {
+    //     return 
+    //     std::get<index_c>(__cdsl.expressions) ;
+    // }
 
 
     template<
-        typename ... nodes_t,
+        typename ... nodes_t, 
         typename node_t>
     constexpr auto
     operator > (
         dsl_expression<nodes_t...> const& __cdsl,
-        dsl_node<node_t> const& __node)
+        dsl_node<node_t> const & __node)
     {
         return 
-        dsl_expression<nodes_t..., std::decay_t<node_t>>
+        dsl_expression<nodes_t..., node_t>
         { std::tuple_cat(
             __cdsl.nodes, 
             std::make_tuple(__node.node)) } ;
@@ -75,15 +80,15 @@ thodd
 
 
     template<
-        typename ... nodes_t,
+        typename ... nodes_t, 
         typename node_t>
     constexpr auto
     operator > (
-        dsl_node<node_t> const& __node, 
+        dsl_node<node_t> const & __node, 
         dsl_expression<nodes_t...> const& __cdsl)
     {
         return 
-        dsl_expression<std::decay_t<node_t>, nodes_t...>
+        dsl_expression<node_t, nodes_t...>
         { std::tuple_cat(
             std::make_tuple(__node.node), 
             __cdsl.nodes) } ;
@@ -91,67 +96,54 @@ thodd
 
 
     template<
-        typename func1_t, 
-        typename func2_t>
+        typename lnode_t,
+        typename rnode_t>
     constexpr auto
     operator > (
-        dsl_node<func1_t> const& __node1,
-        dsl_node<func2_t> const& __node2)
+        dsl_node<lnode_t> const & __node1,
+        dsl_node<rnode_t> const & __node2)
     {
         return 
-        dsl_expression<func1_t, func2_t>
+        dsl_expression<lnode_t, rnode_t>
         { std::make_tuple(__node1.node, __node2.node) } ;
     }
 
 
-    template<
-        typename ... lnodes_t, 
-        typename ... rnodes_t>
-    constexpr auto 
-    operator , (
-        dsl_expression<lnodes_t...> const& __lexpression,
-        dsl_expression<rnodes_t...> const& __rexpression)
-    {
-        using left_t = dsl_expression<lnodes_t...> ;
-        using right_t = dsl_expression<rnodes_t...> ;
+    // template<
+    //     typename ... lnodes_t, 
+    //     typename ... rnodes_t>
+    // constexpr auto 
+    // operator , (
+    //     dsl_expression<lnodes_t...> const& __lexpression,
+    //     dsl_expression<rnodes_t...> const& __rexpression)
+    // {
+    //     using left_t = dsl_expression<lnodes_t...> ;
+    //     using right_t = dsl_expression<rnodes_t...> ;
 
-        return 
-        dsl_expressions<left_t, right_t>
-        { std::make_tuple(
-            __lexpression, 
-            __rexpression) } ;
-    }
+    //     return 
+    //     dsl_expressions<left_t, right_t>
+    //     { std::make_tuple(
+    //         __lexpression, 
+    //         __rexpression) } ;
+    // }
 
 
-    template<
-        typename ... expressions_t,
-        typename ... nodes_t>
-    constexpr auto
-    operator , (
-        dsl_expressions<expressions_t...> const& __expressions,
-        dsl_expression<nodes_t...> const __expression)
-    {
-        using right_t = dsl_expression<nodes_t...> ;
+    // template<
+    //     typename ... expressions_t,
+    //     typename ... nodes_t>
+    // constexpr auto
+    // operator , (
+    //     dsl_expressions<expressions_t...> const& __expressions,
+    //     dsl_expression<nodes_t...> const& __expression)
+    // {
+    //     using right_t = dsl_expression<nodes_t...> ;
 
-        return 
-        dsl_expressions<expressions_t..., right_t>
-        { std::tuple_cat(
-            __expressions.expressions, 
-            std::make_tuple(__expression) } ;
-    }
-
-    
-    template<
-        template<typename...> typename node_t>
-    constexpr auto
-    make_node(
-        auto&&... __funcs)
-    {
-        return 
-        dsl_node<node_t<
-            std::::decay_t<decltype(__funcs)>...>>
-        { { static_cast<auto&&>(__funcs)... } } ; 
-    }
+    //     return 
+    //     dsl_expressions<expressions_t..., right_t>
+    //     { std::tuple_cat(
+    //         __expressions.expressions, 
+    //         std::make_tuple(__expression)) } ;
+    // }
 
 
     namespace detail
@@ -161,7 +153,7 @@ thodd
             typename dsl_t>
         struct go_launcher
         {
-             template<
+            template<
                 typename ... nodes_t>
             constexpr auto 
             operator()(
@@ -177,32 +169,31 @@ thodd
             }
 
 
-            template<
-                typename ... expressions_t, 
-                size_t ... indexes_c>
-            constexpr void 
-            operator()(
-                sequence<size_t, indexes_c...> const&, 
-                dsl_expressions<expressions_t...> const& __dsls,
-                auto&&... __args) const
-            {
-                expand{ (go_launcher<dsl_t>{}(get<indexes_c>(__dsls), 
-                        static_cast<decltype(__args)&&>(__args)...), 0)... } ;
-            }
+            // template<
+            //     typename ... expressions_t, 
+            //     size_t ... indexes_c>
+            // constexpr void 
+            // operator()(
+            //     sequence<size_t, indexes_c...> const&, 
+            //     dsl_expressions<expressions_t...> const& __dsls,
+            //     auto&&... __args) const
+            // {
+            //     (go_launcher<dsl_t>{}(get<indexes_c>(__dsls), static_cast<decltype(__args)&&>(__args)...) , ...) ;
+            // }
 
 
-            template<
-                typename ... expressions_t>
-            constexpr void 
-            operator()(
-                dsl_expressions<expressions_t...> const& __dsls,
-                auto&&... __args) const
-            {
-                go_launcher<dsl_t>{}(
-                    make_indexes<sizeof...(expressions_t)>{}, 
-                    __dsls, 
-                    static_cast<decltype(__args)&&>(__args)...) ;
-            }
+            // template<
+            //     typename ... expressions_t>
+            // constexpr void 
+            // operator()(
+            //     dsl_expressions<expressions_t...> const& __dsls,
+            //     auto&&... __args) const
+            // {
+            //     go_launcher<dsl_t>{}(
+            //         make_rsequence_t<size_t, 0, sizeof...(expressions_t) - 1>{}, 
+            //         __dsls, 
+            //         static_cast<decltype(__args)&&>(__args)...) ;
+            // }
         } ;
     }
 
