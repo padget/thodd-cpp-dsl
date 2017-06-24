@@ -26,6 +26,8 @@ thodd
 
 
     template<
+        typename nodeid_t, 
+        nodeid_t nodeid_c,
         typename node_t>
     struct dsl_node 
     {
@@ -33,12 +35,18 @@ thodd
     } ; 
 
 
+    template<
+        typename nodeid_t, 
+        nodeid_t nodeid_c>
     constexpr auto
     as_dsl_node(
+        std::integral_constant<nodeid_t, nodeid_c>,
         auto&& __node)
     {
         return
-        dsl_node<std::decay_t<decltype(__node)>>
+        dsl_node<
+            nodeid_t, nodeid_c,
+            std::decay_t<decltype(__node)>>
         { static_cast<decltype(__node)&&>(__node) } ;
     }
 
