@@ -9,46 +9,51 @@ namespace
 thodd
 {
     template<
-        typename ... nodes_t>
-    struct dsl_expression
+        typename dslids_t>
+    struct dsl
     {
-        std::tuple<nodes_t...> nodes ;    
+        template<
+            dslids_t nodeid_c,
+            typename act_t>
+        struct node 
+        {
+            act_t act ;
+        } ; 
+
+
+        template<
+            typename ... nodes_t>
+        struct expression
+        {
+            std::tuple<nodes_t...> nodes ;    
+        } ;
+
+
+        as_expression(
+            auto&& ... __expr)
+        {
+            return 
+            expression<std::decay_t<decltype(__expr)>...>
+            { std::make_tuple(static_cast<decltype(__expr)&&>(__expr)...) } ;
+        }
+
+
+        template<
+            dslids_t nodeid_c>
+        constexpr auto
+        as_node(
+            std::integral_constant<dslids_t, nodeid_c>,
+            auto&& __act)
+        {
+            return
+            node<
+                nodeid_c,
+                std::decay_t<decltype(__node)>>
+            { static_cast<decltype(__node)&&>(__node) } ;
+        }
     } ;
 
 
-    as_dsl_expression(
-        auto&& ... __expr)
-    {
-        return 
-        dsl_expression<std::decay_t<decltype(__expr)>...>
-        { std::make_tuple(static_cast<decltype(__expr)&&>(__expr)...) } ;
-    }
-
-
-    template<
-        typename nodeid_t, 
-        nodeid_t nodeid_c,
-        typename node_t>
-    struct dsl_node 
-    {
-        node_t node ;
-    } ; 
-
-
-    template<
-        typename nodeid_t, 
-        nodeid_t nodeid_c>
-    constexpr auto
-    as_dsl_node(
-        std::integral_constant<nodeid_t, nodeid_c>,
-        auto&& __node)
-    {
-        return
-        dsl_node<
-            nodeid_t, nodeid_c,
-            std::decay_t<decltype(__node)>>
-        { static_cast<decltype(__node)&&>(__node) } ;
-    }
 
 
     // template<
@@ -72,15 +77,16 @@ thodd
 
 
     template<
+        typename dslids_t,
         typename ... nodes_t, 
         typename node_t>
     constexpr auto
     operator > (
-        dsl_expression<nodes_t...> const& __cdsl,
-        dsl_node<node_t> const & __node)
+        dsl<dslids_t>::expression<nodes_t...> const& __cdsl,
+        dsl<dslids_t>::node<node_t> const & __node)
     {
         return 
-        dsl_expression<nodes_t..., node_t>
+        dsl<dslids_t>::expression<nodes_t..., node_t>
         { std::tuple_cat(
             __cdsl.nodes, 
             std::make_tuple(__node.node)) } ;
@@ -92,11 +98,11 @@ thodd
         typename node_t>
     constexpr auto
     operator > (
-        dsl_node<node_t> const & __node, 
-        dsl_expression<nodes_t...> const& __cdsl)
+        dsl<dslids_t>::node<node_t> const & __node, 
+        dsl<dslids_t>::expression<nodes_t...> const& __cdsl)
     {
         return 
-        dsl_expression<node_t, nodes_t...>
+        dsl<dslids_t>::expression<node_t, nodes_t...>
         { std::tuple_cat(
             std::make_tuple(__node.node), 
             __cdsl.nodes) } ;
@@ -108,11 +114,11 @@ thodd
         typename rnode_t>
     constexpr auto
     operator > (
-        dsl_node<lnode_t> const & __node1,
-        dsl_node<rnode_t> const & __node2)
+        dsl<dslids_t>::node<lnode_t> const & __node1,
+        dsl<dslids_t>::node<rnode_t> const & __node2)
     {
         return 
-        dsl_expression<lnode_t, rnode_t>
+        dsl<dslids_t>::expression<lnode_t, rnode_t>
         { std::make_tuple(__node1.node, __node2.node) } ;
     }
 
@@ -165,10 +171,10 @@ thodd
                 typename ... nodes_t>
             constexpr auto 
             operator()(
-                dsl_expression<nodes_t...> const& __dsl, 
+                dsl<dslids_t>::expression<nodes_t...> const& __dsl, 
                 auto&&... __args) const
             {
-                constexpr dsl_t<dsl_expression<nodes_t...>> __lang{} ;
+                constexpr dsl_t<dsl<dslids_t>::expression<nodes_t...>> __lang{} ;
 
                 return 
                 __lang(
