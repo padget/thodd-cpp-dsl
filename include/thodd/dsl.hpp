@@ -7,53 +7,99 @@
 
 namespace
 thodd
-{
+{   
     template<
-        typename dslids_t>
-    struct dsl
+        typename id_t, id_t nodeid_c,
+        typename act_t>
+    struct node 
     {
-        template<
-            dslids_t nodeid_c,
-            typename act_t>
-        struct node 
-        {
-            act_t act ;
-        } ; 
+        act_t act ;
+    } ; 
 
 
-        template<
-            typename ... nodes_t>
-        struct expression
-        {
-            std::tuple<nodes_t...> nodes ;    
-        } ;
+    template<
+        typename id_t,
+        id_t id_c>
+    constexpr auto
+    as_node(
+        std::integral_constant<id_t, id_c>,
+        auto&& __act)
+    {
+        return
+        node<id_t, id_c, std::decay_t<decltype(__act)>>
+        { static_cast<decltype(__act)&&>(__act) } ;
+    }
 
 
-        as_expression(
-            auto&& ... __expr)
-        {
-            return 
-            expression<std::decay_t<decltype(__expr)>...>
-            { std::make_tuple(static_cast<decltype(__expr)&&>(__expr)...) } ;
-        }
-
-
-        template<
-            dslids_t nodeid_c>
-        constexpr auto
-        as_node(
-            std::integral_constant<dslids_t, nodeid_c>,
-            auto&& __act)
-        {
-            return
-            node<
-                nodeid_c,
-                std::decay_t<decltype(__node)>>
-            { static_cast<decltype(__node)&&>(__node) } ;
-        }
+    template<
+        typename ... nodes_t>
+    struct expression
+    {
+        std::tuple<nodes_t...> nodes ;    
     } ;
 
+    
+    as_expression(
+        auto&& ... __expr)
+    {
+        return 
+        expression<std::decay_t<decltype(__expr)>...>
+        { std::make_tuple(static_cast<decltype(__expr)&&>(__expr)...) } ;
+    }
 
+
+    template<
+        typename id_t, id_t id1_c, id_t id2_c, 
+        typename act1_t, typename act2_t>
+    constexpr auto
+    operator > (
+        node<id_t, id1_c, act1_t> const& __node1,
+        node<id_t, id2_c, act2_t> const& __node2)
+    {
+        return 
+        expression<
+            node<id_t, id1_c, act1_t>, 
+            node<id_t, id2_c, act2_t>>
+        { std::make_tuple(__node1, __node2) } ;
+    }
+
+   template<
+        typename id_t, id_t id_c, typename act_t, 
+        typename ... nodes_t>
+    constexpr auto 
+    operator > (
+        expression<nodes_t...> const& __expr,
+        node<id_t, id_c, act_t> const& __node)
+    {
+        return 
+        expression<nodes_t..., node<id_t, id_c, act_t>>
+        { std::tuple_cat(
+            __expr.nodes, 
+            std::make_tuple(__node)) } ;
+    }
+
+    
+    template<
+        typename id_t, id_t id_c, typename act_t, 
+        typename ... nodes_t>
+    constexpr auto 
+    operator > (
+        node<id_t, id_c, act_t> const& __node, 
+        expression<nodes_t...> const& __expr)
+    {
+        return 
+        expression<nodes_t..., node<id_t, id_c, act_t>>
+        { std::tuple_cat(
+            std::make_tuple(__node), 
+            __expr.nodes) } ;
+    }
+    
+
+    template<typename ... nodes_t>
+    extern constexpr auto go = [] (expression<nodes_t...> const& __expr, auto&&... __args)
+        {
+            return 2;
+        } ;
 
 
     // template<
@@ -63,64 +109,6 @@ thodd
     //     std::tuple<expressions_t...> expressions ;
     // } ;
 
-
-    // template<
-    //     size_t index_c,
-    //     typename ... expressions_t>
-    // constexpr auto
-    // get (
-    //     dsl_expressions<expressions_t...> const& __cdsl)
-    // {
-    //     return 
-    //     std::get<index_c>(__cdsl.expressions) ;
-    // }
-
-
-    template<
-        typename dslids_t,
-        typename ... nodes_t, 
-        typename node_t>
-    constexpr auto
-    operator > (
-        dsl<dslids_t>::expression<nodes_t...> const& __cdsl,
-        dsl<dslids_t>::node<node_t> const & __node)
-    {
-        return 
-        dsl<dslids_t>::expression<nodes_t..., node_t>
-        { std::tuple_cat(
-            __cdsl.nodes, 
-            std::make_tuple(__node.node)) } ;
-    }
-
-
-    template<
-        typename ... nodes_t, 
-        typename node_t>
-    constexpr auto
-    operator > (
-        dsl<dslids_t>::node<node_t> const & __node, 
-        dsl<dslids_t>::expression<nodes_t...> const& __cdsl)
-    {
-        return 
-        dsl<dslids_t>::expression<node_t, nodes_t...>
-        { std::tuple_cat(
-            std::make_tuple(__node.node), 
-            __cdsl.nodes) } ;
-    }
-
-
-    template<
-        typename lnode_t,
-        typename rnode_t>
-    constexpr auto
-    operator > (
-        dsl<dslids_t>::node<lnode_t> const & __node1,
-        dsl<dslids_t>::node<rnode_t> const & __node2)
-    {
-        return 
-        dsl<dslids_t>::expression<lnode_t, rnode_t>
-        { std::make_tuple(__node1.node, __node2.node) } ;
-    }
 
 
     // template<
@@ -160,62 +148,7 @@ thodd
     // }
 
 
-    namespace detail
-    {
-        template<
-            template<typename> 
-            typename dsl_t>
-        struct go_launcher
-        {
-            template<
-                typename ... nodes_t>
-            constexpr auto 
-            operator()(
-                dsl<dslids_t>::expression<nodes_t...> const& __dsl, 
-                auto&&... __args) const
-            {
-                constexpr dsl_t<dsl<dslids_t>::expression<nodes_t...>> __lang{} ;
-
-                return 
-                __lang(
-                    __dsl, 
-                    static_cast<decltype(__args)&&>(__args)...) ;
-            }
-
-
-            // template<
-            //     typename ... expressions_t, 
-            //     size_t ... indexes_c>
-            // constexpr void 
-            // operator()(
-            //     sequence<size_t, indexes_c...> const&, 
-            //     dsl_expressions<expressions_t...> const& __dsls,
-            //     auto&&... __args) const
-            // {
-            //     (go_launcher<dsl_t>{}(get<indexes_c>(__dsls), static_cast<decltype(__args)&&>(__args)...) , ...) ;
-            // }
-
-
-            // template<
-            //     typename ... expressions_t>
-            // constexpr void 
-            // operator()(
-            //     dsl_expressions<expressions_t...> const& __dsls,
-            //     auto&&... __args) const
-            // {
-            //     go_launcher<dsl_t>{}(
-            //         make_rsequence_t<size_t, 0, sizeof...(expressions_t) - 1>{}, 
-            //         __dsls, 
-            //         static_cast<decltype(__args)&&>(__args)...) ;
-            // }
-        } ;
-    }
-
-
-    template<
-        template<typename>
-        typename dsl_t>
-    extern constexpr auto go = detail::go_launcher<dsl_t>{} ;
+   
 }
 
 #endif
