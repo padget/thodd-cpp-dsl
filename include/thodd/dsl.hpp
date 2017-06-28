@@ -39,6 +39,7 @@ thodd
     } ;
 
     
+    constexpr auto
     as_expression(
         auto&& ... __expr)
     {
@@ -94,61 +95,43 @@ thodd
             __expr.nodes) } ;
     }
     
-
-    template<typename ... nodes_t>
-    extern constexpr auto go = [] (expression<nodes_t...> const& __expr, auto&&... __args)
+    template<
+        typename interpret_t>
+    struct go
+    {
+        template<
+            typename ids_t,
+            ids_t ... ids_c,
+            typename ... acts_t>
+        inline auto
+        operator () (
+            expression<node<ids_t, ids_c, acts_t>...> const& __expr) 
         {
-            return 2;
-        } ;
+        
+            return 
+            (*this)(
+                reverse_sequence(
+                    make_sequence(
+                        std::integral_constant<size_t, sizeof...(acts_t) - 1>{})), 
+                __expr) ;
+        }
 
-
-    // template<
-    //     typename ... expressions_t>
-    // struct dsl_expressions
-    // {
-    //     std::tuple<expressions_t...> expressions ;
-    // } ;
-
-
-
-    // template<
-    //     typename ... lnodes_t, 
-    //     typename ... rnodes_t>
-    // constexpr auto 
-    // operator , (
-    //     dsl_expression<lnodes_t...> const& __lexpression,
-    //     dsl_expression<rnodes_t...> const& __rexpression)
-    // {
-    //     using left_t = dsl_expression<lnodes_t...> ;
-    //     using right_t = dsl_expression<rnodes_t...> ;
-
-    //     return 
-    //     dsl_expressions<left_t, right_t>
-    //     { std::make_tuple(
-    //         __lexpression, 
-    //         __rexpression) } ;
-    // }
-
-
-    // template<
-    //     typename ... expressions_t,
-    //     typename ... nodes_t>
-    // constexpr auto
-    // operator , (
-    //     dsl_expressions<expressions_t...> const& __expressions,
-    //     dsl_expression<nodes_t...> const& __expression)
-    // {
-    //     using right_t = dsl_expression<nodes_t...> ;
-
-    //     return 
-    //     dsl_expressions<expressions_t..., right_t>
-    //     { std::tuple_cat(
-    //         __expressions.expressions, 
-    //         std::make_tuple(__expression)) } ;
-    // }
-
-
-   
+    private:
+        template<
+            typename ids_t,
+            ids_t ... ids_c,
+            typename ... acts_t, 
+            size_t ... idxs_c>
+        inline auto
+        operator () (
+            sequence<size_t, idxs_c...> const&,
+            expression<node<ids_t, ids_c, acts_t>...> const& __expr) 
+        {
+            return 
+            interpret_t{}.interpret(std::get<idxs_c>(__expr.nodes)...) ;
+        }
+        
+    };   
 }
 
 #endif
