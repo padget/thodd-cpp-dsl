@@ -6,8 +6,8 @@
 #  include <thodd/sequence.hpp>
 
 namespace
-thodd
-{   
+thodd   
+{    
     template<
         typename id_t, id_t nodeid_c,
         typename act_t>
