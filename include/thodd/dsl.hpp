@@ -43,29 +43,15 @@ thodd
             auto && ... __params) const 
         {
             return 
-            (*this).__interpret(
-                reverse_sequence(
-                    make_sequence(
-                        std::integral_constant<
-                            decltype(sizeof...(nodes_t) - 1), 
-                            sizeof...(nodes_t) - 1>{})), 
-                static_cast<decltype(__params)&&>(__params)...);
-        }
-    
-    
-    private:
-        template<
-            typename idx_t, 
-            idx_t ... idx_c>
-        constexpr auto 
-        __interpret (
-            sequence<idx_t, idx_c...> const&, 
-            auto && ... __params) const 
-        {
-            auto&& __interpretor = interpret_provider_t{}.get_interpretor(std::get<idx_c>(expression)...) ; 
-            
-            return 
-            __interpretor (static_cast<decltype(__params)&&>(__params)...) ; 
+            std::apply(
+                [&] (auto&& ... __nodes) 
+                { 
+                    return 
+                    interpret_provider_t{}
+                        .get_interpretor(static_cast<decltype(__nodes)&&>(__nodes)...) (
+                            static_cast<decltype(__params)&&>(__params)...) ; 
+                },
+                expression);
         }
     } ;   
 
@@ -88,13 +74,7 @@ thodd
         { std::tuple_cat(
             __dsl.expression, 
             std::make_tuple(__node))  } ;
-    }
-
-
-    
-
-
-    
+    }       
 }
 
 #endif
