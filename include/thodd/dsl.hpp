@@ -3,7 +3,6 @@
 
 #  include <tuple>
 #  include <type_traits>
-#  include <thodd/sequence.hpp>
 #  include <thodd/functional.hpp>
 
 namespace
@@ -73,7 +72,7 @@ thodd
             nodes_t..., node<id_t, id_c, act_t>>
         { std::tuple_cat(
             __dsl.expression, 
-            std::make_tuple(__node))  } ;
+            std::tuple(__node))  } ;
     }       
 }
 
